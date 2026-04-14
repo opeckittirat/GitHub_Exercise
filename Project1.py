@@ -17,6 +17,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import cross_val_score
+
 
 df = pd.read_csv("AB_NYC_2019.csv")
 df["reviews_per_month"] = df["reviews_per_month"].fillna(0)
@@ -205,3 +209,34 @@ plt.title("Actual vs Predicted Prices")
 plt.plot([0, 500], [0, 500])
 
 plt.show()
+
+# ROC
+threshold = y_train.median()
+y_test_class = (y_test > threshold).astype(int)
+
+fpr, tpr, _ = roc_curve(y_test_class, preds)
+roc_auc = auc(fpr, tpr)
+
+plt.figure(figsize=(6,5))
+plt.plot(fpr, tpr, color="#0d7377", linewidth=2, label=f"AUC = {roc_auc:.3f}")
+plt.plot([0, 1], [0, 1], linestyle="--", linewidth=1)
+
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend(loc="lower right")
+plt.show()
+
+# cross validation
+
+pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("model", RandomForestRegressor(n_estimators=150, random_state=42))
+])
+
+scores = cross_val_score(pipe, X, y, cv=5, scoring="neg_root_mean_squared_error")
+
+rmse_scores = -scores
+
+print("Cross validation RMSE:", rmse_scores)
+print("Average RMSE:", rmse_scores.mean())
